@@ -266,6 +266,27 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     }
 
+    @Override
+    public int updateUser(User user,User loginUser) {
+        
+        if(isAdmin(loginUser)){
+
+        }
+        return 0;
+    }
+
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        if(request.getSession().getAttribute(USER_LOGIN_STATE) == null){
+            return null;
+        }
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        if(userObj == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        return (User)userObj;  //类型转换成User
+    }
+
 
 }
 
