@@ -68,12 +68,9 @@ public interface UserService extends IService<User> {
      * @param request
      * @return
      */
-    public boolean isAdmin(HttpServletRequest request) {
-        //判断是否为管理员，这样在delete和search中不需要重复书写
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User user = (User) userObj;
-        return user != null && user.getUserRole() == ADMIN_ROLE;
-    }
+    boolean isAdmin(HttpServletRequest request) ;
+
+    boolean isAdmin(User loginUser);
 
     /**
      * 更新用户信息

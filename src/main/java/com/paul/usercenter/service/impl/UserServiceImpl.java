@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.paul.usercenter.common.ErrorCode;
+import com.paul.usercenter.contant.UserConstant;
 import com.paul.usercenter.exception.BusinessException;
 import com.paul.usercenter.service.UserService;
 import com.paul.usercenter.model.domain.User;
@@ -134,7 +135,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.eq("userPassword", encryptPassword);
         User user = userMapper.selectOne(queryWrapper);
         if (user == null) {
-            log.info("user login failed,userAccount cannot match userPassword");
+//            log.info("user login failed,userAccount cannot match userPassword");
             return null;
         }
         long count = userMapper.selectCount(queryWrapper);
@@ -267,24 +268,58 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public int updateUser(User user,User loginUser) {
-        
-        if(isAdmin(loginUser)){
+    public boolean isAdmin(HttpServletRequest request) {
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return user != null && user.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
 
+    @Override
+    public boolean isAdmin(User loginUser) {
+        return loginUser != null && loginUser.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+
+    @Override
+    public int updateUser(User user, User loginUser) {
+        long userId = user.getId();
+        //如果是管理员，允许更新任意用户
+        if (isAdmin(loginUser)) {
+            if (userId <= 0) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            }
+            User oldUser = userMapper.selectById(userId);
+            if (oldUser == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            }
+
+            return userMapper.updateById(user);
         }
-        return 0;
+        if(!isAdmin(loginUser) && userId != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        //非管理员只更新自己
+        if (userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        return userMapper.updateById(user);
     }
 
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        if(request.getSession().getAttribute(USER_LOGIN_STATE) == null){
+        if (request.getSession().getAttribute(USER_LOGIN_STATE) == null) {
             return null;
         }
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        if(userObj == null){
+        if (userObj == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        return (User)userObj;  //类型转换成User
+        return (User) userObj;  //类型转换成User
     }
 
 
