@@ -27,6 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static com.paul.usercenter.contant.UserConstant.USER_LOGIN_STATE;
+
 /**
  * @author 30420
  * @author Paul
@@ -90,7 +92,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
 
         //加密
-        final String SALT = "Paul";
+//        final String SALT = "Paul";
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
 
         //向用户数据库插入数据
@@ -115,7 +117,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userAccount.length() < 4) {
             return null;
         }
-        if (userPassword.length() < 6) {
+        if (userPassword.length() < 8) {
             return null;
         }
 
@@ -135,20 +137,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         queryWrapper.eq("userPassword", encryptPassword);
         User user = userMapper.selectOne(queryWrapper);
         if (user == null) {
-//            log.info("user login failed,userAccount cannot match userPassword");
+            log.info("User login failed,userAccount cannot match userPassword");
             return null;
         }
-        long count = userMapper.selectCount(queryWrapper);
-        if (count > 0) {
-            return null;
-        }
-
-
-        return user;
+//        long count = userMapper.selectCount(queryWrapper);
+//        if (count > 0) {
+//            return null;
+//        }
+        //脱敏
+        User safetyUser = getSafetyUser(user);
+        //记录用户的登录态
+        request.getSession().setAttribute(USER_LOGIN_STATE, safetyUser);
+        return safetyUser;
     }
 
     @Override
     public User getSafetyUser(User originUser) {
+        if (originUser == null) {
+            return null;
+        }
         User safetyUser = new User();
         safetyUser.setId(originUser.getId());
         safetyUser.setUserName(originUser.getUserName());
@@ -164,57 +171,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
 
-    @Override
-    public User doLogin(String userAccount, String userPassword, HttpServletRequest request) {
-        // 校验
-        if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return null;
-        }
-        if (userAccount.length() < 4) {
-            return null;
-        }
-        if (userPassword.length() < 6) {
-            return null;
-        }
 
-        //校验账户包含特殊字符
-        String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
-        Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
-        if (matcher.find()) {
-            return null;
-        }
-        //加密
-        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
-
-        //检测用户是否存在
-        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("userAccount", userAccount);
-        queryWrapper.eq("userPassword", encryptPassword);
-        User user = userMapper.selectOne(queryWrapper);
-        //用户不存在
-        if (user == null) {
-            log.info("user login failed,userAccount cannot match userPassword");
-            return null;
-        }
-
-        //用户脱敏 隐藏敏感信息，防止数据库中的字段泄露
-        User safetyUser = getSafetyUser(user);
-
-
-        //记录用户登录态
-        request.getSession().setAttribute(USER_LOGIN_STATE, user);
-        return safetyUser;
-
-        /**
-         * 连接到服务器后，得到一个session(1)状态（匿名会话），返回给前端
-         * 当用户登录成功后，得到登录成功的session(2)并给session设置值（用户信息等）返回给前端一个
-         * 设置cookie的命令，前端接收到命令行，设置cookie，保存到浏览器内
-         * 前端再次请求后端时，必须是相同的域名，在请求头中带上cookie
-         * 后端拿到前端传来的cookie，找到对应session
-         * 后端从session中可以取出基于session存储的变量（登录信息、登录名等）
-         */
-
-    }
 
     @Override
     public int userLogout(HttpServletRequest request) {
@@ -231,27 +188,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         List<User> userList = userMapper.selectList(queryWrapper);
         Gson gson = new Gson();
-
         //在内存中判断是否包含要求的标签
         return userList.stream().filter(user -> {
             String tagsStr = user.getTags();
-            if (StringUtils.isNotBlank(tagsStr)) {
-                return false;
-            }
             Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>() {
             }.getType()); //反序列化
             tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>()); //消除分支
-            for (String tagName : tempTagNameSet) {
-                if (!tagNameList.contains(tagName)) {
-                    return false;
-                }
-            }
-//            gson.toJson(tempTagNameList); 序列化，返回一个字符串
-            for (String tagName : tempTagNameSet) {
+            for (String tagName : tagNameList) {
                 if (!tempTagNameSet.contains(tagName)) {
                     return false;
                 }
             }
+//            gson.toJson(tempTagNameList); 序列化，返回一个字符串
+//            for (String tagName : tempTagNameSet) {
+//                if (!tempTagNameSet.contains(tagName)) {
+//                    return false;
+//                }
+//            }
             return true;
         }).map((this::getSafetyUser)).collect(Collectors.toList());
 //        for (User user : userList) {
@@ -284,24 +237,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     public int updateUser(User user, User loginUser) {
         long userId = user.getId();
         //如果是管理员，允许更新任意用户
-        if (isAdmin(loginUser)) {
-            if (userId <= 0) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR);
-            }
-            User oldUser = userMapper.selectById(userId);
-            if (oldUser == null) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR);
-            }
-
-            return userMapper.updateById(user);
-        }
-        if(!isAdmin(loginUser) && userId != loginUser.getId()) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
-        }
-        //非管理员只更新自己
         if (userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        //非管理员只更新自己
+//        if (userId <= 0) {
+//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+//        }
         User oldUser = userMapper.selectById(userId);
         if (oldUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -312,12 +257,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        if (request.getSession().getAttribute(USER_LOGIN_STATE) == null) {
+        if (request == null) {
             return null;
         }
         Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
         if (userObj == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+            throw new BusinessException(ErrorCode.NO_AUTH);
         }
         return (User) userObj;  //类型转换成User
     }
@@ -328,3 +273,54 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
 
 
+//    @Override
+//    public User doLogin(String userAccount, String userPassword, HttpServletRequest request) {
+//        // 校验
+//        if (StringUtils.isAnyBlank(userAccount, userPassword)) {
+//            return null;
+//        }
+//        if (userAccount.length() < 4) {
+//            return null;
+//        }
+//        if (userPassword.length() < 6) {
+//            return null;
+//        }
+//
+//        //校验账户包含特殊字符
+//        String validPattern = "[`~!@#$%^&*()+=|{}':;',\\\\[\\\\].<>/?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？]";
+//        Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
+//        if (matcher.find()) {
+//            return null;
+//        }
+//        //加密
+//        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+//
+//        //检测用户是否存在
+//        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+//        queryWrapper.eq("userAccount", userAccount);
+//        queryWrapper.eq("userPassword", encryptPassword);
+//        User user = userMapper.selectOne(queryWrapper);
+//        //用户不存在
+//        if (user == null) {
+//            log.info("user login failed,userAccount cannot match userPassword");
+//            return null;
+//        }
+//
+//        //用户脱敏 隐藏敏感信息，防止数据库中的字段泄露
+//        User safetyUser = getSafetyUser(user);
+//
+//
+//        //记录用户登录态
+//        request.getSession().setAttribute(USER_LOGIN_STATE, user);
+//        return safetyUser;
+//
+//        /**
+//         * 连接到服务器后，得到一个session(1)状态（匿名会话），返回给前端
+//         * 当用户登录成功后，得到登录成功的session(2)并给session设置值（用户信息等）返回给前端一个
+//         * 设置cookie的命令，前端接收到命令行，设置cookie，保存到浏览器内
+//         * 前端再次请求后端时，必须是相同的域名，在请求头中带上cookie
+//         * 后端拿到前端传来的cookie，找到对应session
+//         * 后端从session中可以取出基于session存储的变量（登录信息、登录名等）
+//         */
+//
+//    }

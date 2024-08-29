@@ -13,11 +13,11 @@ import java.io.Serializable;
 
 @Data
 public class UserLoginRequest implements Serializable {
-    @Serial
+//    @Serial
     private static final long serialVersionUID = 3191241716373120793L;
-    @Setter
-    @Getter
+//    @Setter
+//    @Getter
     private String userAccount;
     private String userPassword;
-    private String checkPassword;
+//    private String checkPassword;
 }

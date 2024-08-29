@@ -22,7 +22,7 @@ public interface UserService extends IService<User> {
      * 用户登录态键
      * 通过登录态找到唯一一个值
      */
-     String USER_LOGIN_STATE = "userLoginState";
+//     String USER_LOGIN_STATE = "userLoginState";
 
     /**
      * @param userAccount   用户账户
@@ -48,7 +48,7 @@ public interface UserService extends IService<User> {
      */
     User getSafetyUser(User originUser);
 
-    User doLogin(String userAccount, String userPassword, HttpServletRequest request);
+//    User doLogin(String userAccount, String userPassword, HttpServletRequest request);
 
     /**
      * 用户注销

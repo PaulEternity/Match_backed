@@ -41,19 +41,19 @@ public class UserRegisterRequest implements Serializable {
      */
     private String checkPassword;
 
-    public UserRegisterRequest() {
-    }
-
-    public UserRegisterRequest(long serialVersionUID, String userAccount, String userPassword, String checkPassword) {
-//        UserRegisterRequest.serialVersionUID = serialVersionUID;
-        this.userAccount = userAccount;
-        this.userPassword = userPassword;
-        this.checkPassword = checkPassword;
-    }
-
-    public String toString() {
-        return "UserRegisterRequest{serialVersionUID = " + serialVersionUID + ", userAccount = " + userAccount + ", userPassword = " + userPassword + ", checkPassword = " + checkPassword + "}";
-    }
+//    public UserRegisterRequest() {
+//    }
+//
+//    public UserRegisterRequest(long serialVersionUID, String userAccount, String userPassword, String checkPassword) {
+////        UserRegisterRequest.serialVersionUID = serialVersionUID;
+//        this.userAccount = userAccount;
+//        this.userPassword = userPassword;
+//        this.checkPassword = checkPassword;
+//    }
+//
+//    public String toString() {
+//        return "UserRegisterRequest{serialVersionUID = " + serialVersionUID + ", userAccount = " + userAccount + ", userPassword = " + userPassword + ", checkPassword = " + checkPassword + "}";
+//    }
 
     private String planetCode;
 }
