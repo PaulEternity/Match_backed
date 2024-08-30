@@ -19,5 +19,5 @@ public class UserLoginRequest implements Serializable {
 //    @Getter
     private String userAccount;
     private String userPassword;
-//    private String checkPassword;
+
 }

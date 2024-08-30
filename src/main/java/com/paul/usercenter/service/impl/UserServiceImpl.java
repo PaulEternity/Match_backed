@@ -98,7 +98,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //向用户数据库插入数据
         User user = new User();
         user.setUserAccount(userAccount);
-        user.setPassword(encryptPassword);
+        user.setUserPassword(encryptPassword);
         user.setPlanetCode(planetCode);
         boolean saveResult = this.save(user);
         if (!saveResult) {
@@ -166,6 +166,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setEmail(originUser.getEmail());
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setPlanetCode(originUser.getPlanetCode());
+        safetyUser.setUserRole(originUser.getUserRole());
         safetyUser.setTags(originUser.getTags());
         return safetyUser;
     }

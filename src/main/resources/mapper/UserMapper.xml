@@ -10,7 +10,7 @@
             <result property="userName" column="userName" jdbcType="VARCHAR"/>
             <result property="avatarUrl" column="avatarUrl" jdbcType="VARCHAR"/>
             <result property="gender" column="gender" jdbcType="TINYINT"/>
-            <result property="password" column="password" jdbcType="VARCHAR"/>
+            <result property="userPassword" column="userPassword" jdbcType="VARCHAR"/>
             <result property="phone" column="phone" jdbcType="VARCHAR"/>
             <result property="email" column="email" jdbcType="VARCHAR"/>
             <result property="userStatus" column="userStatus" jdbcType="TINYINT"/>
@@ -24,7 +24,7 @@
 
     <sql id="Base_Column_List">
         id,userAccount,userName,
-        avatarUrl,gender,password,
+        avatarUrl,gender,userPassword,
         phone,email,userStatus,
         creatTime,updateTime,isDelete,
         userRole,planetCode,tags

@@ -42,7 +42,7 @@ public class User implements Serializable {
     /**
      * 
      */
-    private String password;
+    private String userPassword;
 
     /**
      * 
@@ -70,12 +70,12 @@ public class User implements Serializable {
     private Date updateTime;
 
     /**
-     * 
-     */
-
-    private String tags;
-    /**
      * 标签列表
+     */
+    private String tags;
+
+    /**
+     *
      */
 
     @TableLogic
