@@ -1,5 +1,6 @@
 package com.paul.usercenter.service;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.Resource;
 
@@ -28,6 +30,32 @@ class UserServiceTest {
     @Resource
     private UserService userService;
 
+    public void doInsertUsers() {
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        final int INSERT_NUM = 100;
+        List<User> userList = new ArrayList<>();
+        for (int i = 0; i < INSERT_NUM; i++) {
+            User user = new User();
+            user.setUserAccount("");
+            user.setUserName("假用户");
+            user.setAvatarUrl("");
+            user.setGender(0);
+            user.setUserPassword("");
+            user.setPhone("");
+            user.setEmail("");
+            user.setUserStatus(0);
+            user.setTags("");
+            user.setUserRole(0);
+            user.setPlanetCode("");
+            userList.add(user);
+        }
+        userService.saveBatch(userList , 100);
+//      userMapper.insert(user);
+        stopWatch.stop();
+        System.out.println(stopWatch.getTotalTimeMillis());
+    }
+
     @Test
     void  testAddUse(){
         User user = new User();
@@ -39,7 +67,7 @@ class UserServiceTest {
         user.setUserName("Paul");
         user.setAvatarUrl("https://www.indonesia.travel/content/dam/indtravelrevamp/en/destinations/bali-nusa-tenggara/west-nusa-tenggara/lombok/lombok1.jpg");
         user.setGender(0);
-        user.setPassword("123456");
+//        user.setPassword("123456");
         user.setPhone("123456");
         user.setEmail("556234");
         user.setUserStatus(0);

@@ -160,6 +160,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setId(originUser.getId());
         safetyUser.setUserName(originUser.getUserName());
         safetyUser.setUserAccount(originUser.getUserAccount());
+        safetyUser.setUserPassword(originUser.getUserPassword());
         safetyUser.setAvatarUrl(originUser.getAvatarUrl());
         safetyUser.setGender(originUser.getGender());
         safetyUser.setPhone(originUser.getPhone());
@@ -241,9 +242,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
-            throw new BusinessException(ErrorCode.NO_AUTH);
-        }
+//        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+//            throw new BusinessException(ErrorCode.NO_AUTH);
+//        }
         //非管理员只更新自己
 //        if (userId <= 0) {
 //            throw new BusinessException(ErrorCode.PARAMS_ERROR);

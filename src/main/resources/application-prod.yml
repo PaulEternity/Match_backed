@@ -1,0 +1,12 @@
+spring:
+  profiles:
+    active: dev
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/Star
+    username: root
+    password: GYh031125
+  session:
+    timeout: 86400  #设置session超时时间 一天86400秒
+server:
+  address: 0.0.0.0
