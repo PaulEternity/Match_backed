@@ -4,6 +4,7 @@ import com.paul.usercenter.common.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.io.Serial;
 import java.util.List;
 
 /**
@@ -12,6 +13,8 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TeamQuery extends PageRequest {
+    @Serial
+    private static final long serialVersionUID = -7756396515081050193L;
     /**
      * id
      */

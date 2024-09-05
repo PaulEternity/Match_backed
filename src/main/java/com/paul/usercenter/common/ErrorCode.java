@@ -1,10 +1,13 @@
 package com.paul.usercenter.common;
 
+import lombok.Getter;
+
 /**
  * 错误码
  *
  *
  */
+@Getter
 public enum ErrorCode {
 
     PARAMS_ERROR(40000,"请求参数错误",""),
@@ -31,15 +34,4 @@ public enum ErrorCode {
         this.description = description;
     }
 
-    public int getCode() {
-        return code;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 }
