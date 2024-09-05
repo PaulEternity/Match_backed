@@ -1,9 +1,9 @@
 package com.paul.usercenter.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import generator.domain.UserTeam;
-import generator.mapper.UserTeamMapper;
-import generator.service.UserTeamService;
+import com.paul.usercenter.mapper.UserTeamMapper;
+import com.paul.usercenter.model.domain.UserTeam;
+import com.paul.usercenter.service.UserTeamService;
 import org.springframework.stereotype.Service;
 
 /**

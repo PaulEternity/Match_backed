@@ -1,14 +1,10 @@
 package com.paul.usercenter.service;
 
-import com.paul.usercenter.contant.UserConstant;
 import com.paul.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-
-import static com.paul.usercenter.contant.UserConstant.ADMIN_ROLE;
-import static com.paul.usercenter.contant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * @author 30420

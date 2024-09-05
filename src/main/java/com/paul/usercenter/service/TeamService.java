@@ -1,7 +1,7 @@
 package com.paul.usercenter.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import generator.domain.Team;
+import com.paul.usercenter.model.domain.Team;
 
 /**
 * @author 30420
@@ -9,5 +9,8 @@ import generator.domain.Team;
 * @createDate 2024-09-05 10:05:08
 */
 public interface TeamService extends IService<Team> {
+//    boolean updateById(com.paul.usercenter.model.domain.Team team);
+//
+//    boolean save(com.paul.usercenter.model.domain.Team team);
 
 }

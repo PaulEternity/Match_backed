@@ -1,7 +1,7 @@
 package com.paul.usercenter.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import generator.domain.UserTeam;
+import com.paul.usercenter.model.domain.UserTeam;
 
 /**
 * @author 30420

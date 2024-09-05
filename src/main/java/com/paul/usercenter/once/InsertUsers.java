@@ -1,9 +1,7 @@
 package com.paul.usercenter.once;
-import java.util.Date;
 
 import com.paul.usercenter.mapper.UserMapper;
 import com.paul.usercenter.model.domain.User;
-import com.paul.usercenter.service.UserService;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 

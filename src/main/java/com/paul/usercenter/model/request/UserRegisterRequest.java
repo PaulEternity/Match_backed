@@ -1,4 +1,4 @@
-package com.paul.usercenter.model.domain.request;
+package com.paul.usercenter.model.request;
 
 import lombok.Getter;
 import lombok.Setter;
