@@ -42,6 +42,7 @@ public class PreCacheJob {
         RLock lock = redissonClient.getLock("paul:precachejob:docache:lock");
         try {
             if (lock.tryLock(0, 30000, TimeUnit.MILLISECONDS)) { //尝试获取锁 等待时间：0 超时时间：30000
+                System.out.println("Already get lock" + Thread.currentThread().getId());
                 for (Long userId : mainUserList) {
                     QueryWrapper<User> queryWrapper = new QueryWrapper<>();
                     Page<User> userPage = userService.page(new Page<>(1, 20), queryWrapper);
