@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.paul.usercenter.model.domain.Team;
 import com.paul.usercenter.model.domain.User;
 import com.paul.usercenter.model.dto.TeamQuery;
+import com.paul.usercenter.model.request.TeamUpdateRequest;
 import com.paul.usercenter.model.vo.TeamUserVO;
 
 import java.util.List;
@@ -25,4 +26,6 @@ public interface TeamService extends IService<Team> {
 
 
     List<TeamUserVO> listTeams(TeamQuery teamQuery,boolean isAdmin);
+
+    boolean updateTeam(TeamUpdateRequest teamUpdateRequest,User loginUser);
 }

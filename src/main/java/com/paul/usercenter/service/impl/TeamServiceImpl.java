@@ -10,6 +10,7 @@ import com.paul.usercenter.model.domain.User;
 import com.paul.usercenter.model.domain.UserTeam;
 import com.paul.usercenter.model.dto.TeamQuery;
 import com.paul.usercenter.model.enums.TeamStatusEnum;
+import com.paul.usercenter.model.request.TeamUpdateRequest;
 import com.paul.usercenter.model.vo.TeamUserVO;
 import com.paul.usercenter.model.vo.UserVO;
 import com.paul.usercenter.service.TeamService;
@@ -23,10 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 /**
@@ -210,6 +208,31 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
 
         return teamUserVOList;
+    }
+
+    @Override
+    public boolean updateTeam(TeamUpdateRequest teamUpdateRequest,User loginUser) {
+        if(teamUpdateRequest == null ) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long teamId = teamUpdateRequest.getId();
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Team oldteam = this.getById(teamId);
+        if (oldteam == null) {
+            throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR,"队伍不存在！");
+        }
+        if(oldteam.getUserId() != loginUser.getId() && userService.isAdmin(loginUser)) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        if(Objects.equals(oldteam.getDescription(), teamUpdateRequest.getDescription())) {
+            throw new BusinessException(ErrorCode.INVALID_CHANGES);
+        }
+        Team updateTeam = new Team();
+        BeanUtils.copyProperties(teamUpdateRequest, updateTeam);
+        return this.updateById(updateTeam);
+
     }
 
 
