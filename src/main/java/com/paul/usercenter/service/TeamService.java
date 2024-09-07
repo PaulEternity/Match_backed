@@ -1,8 +1,13 @@
 package com.paul.usercenter.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.paul.usercenter.model.domain.Team;
 import com.paul.usercenter.model.domain.User;
+import com.paul.usercenter.model.dto.TeamQuery;
+import com.paul.usercenter.model.vo.TeamUserVO;
+
+import java.util.List;
 
 /**
 * @author 30420
@@ -19,4 +24,5 @@ public interface TeamService extends IService<Team> {
     long addTeam(Team team, User loginUser);
 
 
+    List<TeamUserVO> listTeams(TeamQuery teamQuery,boolean isAdmin);
 }
