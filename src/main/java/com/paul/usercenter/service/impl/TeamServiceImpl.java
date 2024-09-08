@@ -313,19 +313,13 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class) //一致性 涉及多个增删改操作，就加上
     public boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser) {
         if (teamQuitRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         Long teamId = teamQuitRequest.getTeamId();
-        if (teamId == null || teamId <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        Team team = this.getById(teamId);
-        if (team == null) {
-            throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR, "队伍不存在");
-        }
-
+        Team team = getTeamById(teamId);
         long userId = loginUser.getId();
         UserTeam userTeam = new UserTeam();
         userTeam.setTeamId(teamId);
@@ -370,10 +364,39 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return false;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class) //一致性
+    public boolean deleteTeam(long teamId, User loginUser) {
+        Team team = getTeamById(teamId);
+        if (team.getUserId() != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH, "无权限");
+        }
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        userTeamService.remove(userTeamQueryWrapper);
+        boolean result = userTeamService.remove(userTeamQueryWrapper);
+        if (!result) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除队伍关联信息失败");
+        }
+        return this.removeById(teamId);
+    }
+
+
     private long countTeamUserByTeamId(Long teamId) {
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         userTeamQueryWrapper.eq("teamId", teamId);
         return userTeamService.count(userTeamQueryWrapper);
+    }
+
+    private Team getTeamById(Long teamId) {
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR, "队伍不存在");
+        }
+        return team;
     }
 
 }
