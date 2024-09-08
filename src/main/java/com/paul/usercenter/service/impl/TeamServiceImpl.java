@@ -226,6 +226,15 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if(oldteam.getUserId() != loginUser.getId() && userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
+
+        TeamStatusEnum statusEnum = TeamStatusEnum.getEnumByValue(teamUpdateRequest.getStatus());
+        if (statusEnum.equals(TeamStatusEnum.SECRET)) {
+            if (StringUtils.isNotBlank(teamUpdateRequest.getPassword())){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR,"加密房间必须设置密码");
+            }
+        }
+
+
         if(Objects.equals(oldteam.getDescription(), teamUpdateRequest.getDescription())) {
             throw new BusinessException(ErrorCode.INVALID_CHANGES);
         }
