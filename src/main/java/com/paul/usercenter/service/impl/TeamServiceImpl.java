@@ -11,6 +11,7 @@ import com.paul.usercenter.model.domain.UserTeam;
 import com.paul.usercenter.model.dto.TeamQuery;
 import com.paul.usercenter.model.enums.TeamStatusEnum;
 import com.paul.usercenter.model.request.TeamJoinRequest;
+import com.paul.usercenter.model.request.TeamQuitRequest;
 import com.paul.usercenter.model.request.TeamUpdateRequest;
 import com.paul.usercenter.model.vo.TeamUserVO;
 import com.paul.usercenter.model.vo.UserVO;
@@ -296,7 +297,8 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "已加入该队伍");
         }
 
-        long teamHasJoinNum = userTeamService.count(userTeamQueryWrapper);
+
+        long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
         userTeamQueryWrapper = new QueryWrapper<>();
         userTeamQueryWrapper.eq("teamId", teamId);
         if (teamHasJoinNum > team.getMaxNum()) {
@@ -310,6 +312,69 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         return userTeamService.save(userTeam);
     }
 
+    @Override
+    public boolean quitTeam(TeamQuitRequest teamQuitRequest, User loginUser) {
+        if (teamQuitRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Long teamId = teamQuitRequest.getTeamId();
+        if (teamId == null || teamId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Team team = this.getById(teamId);
+        if (team == null) {
+            throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR, "队伍不存在");
+        }
+
+        long userId = loginUser.getId();
+        UserTeam userTeam = new UserTeam();
+        userTeam.setTeamId(teamId);
+        userTeam.setUserId(userId);
+        QueryWrapper<UserTeam> queryWrapper = new QueryWrapper<>(userTeam);
+        long count = userTeamService.count(queryWrapper);
+        if (count == 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "未加入队伍！");
+        }
+        long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
+        //只剩一人，队伍解散
+        if (teamHasJoinNum == 1) {
+            this.removeById(teamId);
+            QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+            userTeamQueryWrapper.eq("teamId", teamId);
+            userTeamService.remove(userTeamQueryWrapper);
+        } else {
+
+            if (team.getUserId() == userId) {
+                QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+                userTeamQueryWrapper.eq("teamId", teamId);
+                userTeamQueryWrapper.last("order by id asc limit 2");
+                List<UserTeam> userTeamList = userTeamService.list(userTeamQueryWrapper);
+                if (CollectionUtils.isEmpty(userTeamList) || userTeamList.size() <= 1) {
+                    throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+                }
+                UserTeam nextUserTeam = userTeamList.get(1);
+                Long nextTeamLeaderId = nextUserTeam.getUserId();
+                Team updateTeam = new Team();
+                updateTeam.setId(teamId);
+                updateTeam.setUserId(nextTeamLeaderId);
+                boolean result = this.updateById(updateTeam);
+                if (!result) {
+                    throw new BusinessException(ErrorCode.PARAMS_ERROR, "更新队伍队长失败");
+                }
+//                userTeamQueryWrapper = new QueryWrapper<>();
+//                userTeamQueryWrapper.eq("teamId", teamId);
+//                userTeamQueryWrapper.eq("userId", userId);
+            }
+            return userTeamService.remove(queryWrapper);
+        }
+        return false;
+    }
+
+    private long countTeamUserByTeamId(Long teamId) {
+        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+        userTeamQueryWrapper.eq("teamId", teamId);
+        return userTeamService.count(userTeamQueryWrapper);
+    }
 
 }
 
