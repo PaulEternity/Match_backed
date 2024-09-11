@@ -60,6 +60,18 @@ public class TeamUserVO implements Serializable {
      */
     private Date updateTime;
 
-    UserVO createUser;
+
+
+    private UserVO createUser;
+
+    /**
+     * 已加入的用户数
+     */
+    private Integer hasJoinNum;
+
+    /**
+     * 是否已加入队伍
+     */
+    private boolean hasJoin = false;
 
 }

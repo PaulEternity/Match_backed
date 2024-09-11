@@ -112,9 +112,10 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
 
         team.setId(null);
-        Long teamId = team.getId();
+        team.setUserId(userId);
         boolean result = this.save(team);
-        if (!result || teamId == 0) {
+        Long teamId = team.getId();
+        if (!result || teamId == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
         }
 
@@ -135,12 +136,14 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     public List<TeamUserVO> listTeams(TeamQuery teamQuery, boolean isAdmin) {
         QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
         if (teamQuery != null) {
-
             //根据ID查询
             Long teamId = teamQuery.getId();
-            queryWrapper.eq("id", teamId);
             if (teamId != null && teamId > 0) {
-                queryWrapper.eq("teamId", teamId);
+                queryWrapper.eq("id", teamId);
+            }
+            List<Long> idList = teamQuery.getIdList();
+            if (!CollectionUtils.isEmpty(idList)) {
+                queryWrapper.in("id", idList);
             }
 
             String searchText = teamQuery.getSearchText();
@@ -182,8 +185,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
                 throw new BusinessException(ErrorCode.NO_AUTH);
             }
             queryWrapper.eq("status", statusEnum.getValue());
-
-
         }
 
         //不展示已过期的队伍
@@ -203,9 +204,11 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             User user = userService.getById(userId);
             TeamUserVO teamUserVO = new TeamUserVO();
             BeanUtils.copyProperties(team, teamUserVO);
-            UserVO userVO = new UserVO();
-            BeanUtils.copyProperties(user, userVO);
-            teamUserVO.setCreateUser(userVO);
+            if (user != null) {
+                UserVO userVO = new UserVO();
+                BeanUtils.copyProperties(user, userVO);
+                teamUserVO.setCreateUser(userVO);
+            }
             teamUserVOList.add(teamUserVO);
         }
 
@@ -225,7 +228,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         if (oldteam == null) {
             throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR, "队伍不存在！");
         }
-        if (oldteam.getUserId() != loginUser.getId() && userService.isAdmin(loginUser)) {
+        if (oldteam.getUserId() != loginUser.getId() && !userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
 
@@ -366,14 +369,14 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 
     @Override
     @Transactional(rollbackFor = Exception.class) //一致性
-    public boolean deleteTeam(long teamId, User loginUser) {
-        Team team = getTeamById(teamId);
+    public boolean deleteTeam(long id, User loginUser) {
+        Team team = getTeamById(id);
+        long teamId = team.getId();
         if (team.getUserId() != loginUser.getId()) {
             throw new BusinessException(ErrorCode.NO_AUTH, "无权限");
         }
         QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
         userTeamQueryWrapper.eq("teamId", teamId);
-        userTeamService.remove(userTeamQueryWrapper);
         boolean result = userTeamService.remove(userTeamQueryWrapper);
         if (!result) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "删除队伍关联信息失败");

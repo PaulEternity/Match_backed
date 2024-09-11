@@ -242,14 +242,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-//        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
-//            throw new BusinessException(ErrorCode.NO_AUTH);
-//        }
-        //非管理员只更新自己
-//        if (userId <= 0) {
-//            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-//        }
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
         User oldUser = userMapper.selectById(userId);
+        //非管理员只更新自己
+
         if (oldUser == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
