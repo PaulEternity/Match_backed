@@ -10,7 +10,7 @@ import lombok.Setter;
 public enum TeamStatusEnum {
     PUBLIC(0, "公开"),
     PRIVATE(1, "私有"),
-    SECRET(2, "私密");
+    SECRET(2, "加密");
 
 
     private int value;

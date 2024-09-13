@@ -181,7 +181,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             if (statusEnum == null) { //如果没有设置，默认公开
                 statusEnum = TeamStatusEnum.PUBLIC;
             }
-            if (!isAdmin && !statusEnum.equals(TeamStatusEnum.PUBLIC)) { //要查询私密队伍需要管理员权限
+            if (!isAdmin && statusEnum.equals(TeamStatusEnum.PRIVATE)) { //要查询私密队伍需要管理员权限
                 throw new BusinessException(ErrorCode.NO_AUTH);
             }
             queryWrapper.eq("status", statusEnum.getValue());
@@ -276,7 +276,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         String password = teamJoinRequest.getPassword();
         if (Objects.equals(teamStatusEnum, TeamStatusEnum.SECRET)) {
-            if (StringUtils.isNotBlank(password) || !password.equals(team.getPassword())) {
+            if (StringUtils.isBlank(password) || !password.equals(team.getPassword())) {
                 throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR, "密码错误");
             }
         }
