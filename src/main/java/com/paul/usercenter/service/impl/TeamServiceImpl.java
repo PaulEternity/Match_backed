@@ -19,6 +19,7 @@ import com.paul.usercenter.service.TeamService;
 import com.paul.usercenter.service.UserService;
 import com.paul.usercenter.service.UserTeamService;
 import org.apache.commons.lang3.StringUtils;
+import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -46,11 +48,6 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
     @Resource
     private RedissonClient redissonClient;
 
-    private final UserServiceImpl userServiceImpl;
-
-    public TeamServiceImpl(UserServiceImpl userServiceImpl) {
-        this.userServiceImpl = userServiceImpl;
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -103,35 +100,33 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "超时时间>当前时间");
         }
 
-        synchronized (this) {
-            //每人最多创建5个队伍 但是如果连点可以创建多个，需要修
-            QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("userId", userId);
-            long hasTeamNum = this.count(queryWrapper);
-            if (hasTeamNum >= 5) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "最多创建5个队伍！");
-            }
-
-            team.setId(null);
-            team.setUserId(userId);
-            boolean result = this.save(team);
-            Long teamId = team.getId();
-            if (!result || teamId == null) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
-            }
-
-            //插入用户
-            UserTeam userTeam = new UserTeam();
-            userTeam.setUserId(userId);
-            userTeam.setTeamId(teamId);
-            userTeam.setJoinTime(new Date());
-            result = userTeamService.save(userTeam);
-            if (!result) {
-                throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
-            }
-
-            return teamId;
+        //每人最多创建5个队伍 但是如果连点可以创建多个，需要修
+        QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        long hasTeamNum = this.count(queryWrapper);
+        if (hasTeamNum >= 5) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "最多创建5个队伍！");
         }
+
+        team.setId(null);
+        team.setUserId(userId);
+        boolean result = this.save(team);
+        Long teamId = team.getId();
+        if (!result || teamId == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
+        }
+
+        //插入用户
+        UserTeam userTeam = new UserTeam();
+        userTeam.setUserId(userId);
+        userTeam.setTeamId(teamId);
+        userTeam.setJoinTime(new Date());
+        result = userTeamService.save(userTeam);
+        if (!result) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
+        }
+
+        return teamId;
     }
 
     @Override
@@ -278,7 +273,7 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
         }
         String password = teamJoinRequest.getPassword();
         if (Objects.equals(teamStatusEnum, TeamStatusEnum.SECRET)) {
-            if (StringUtils.isBlank(password) || !password.equals(team.getPassword())) {
+            if (StringUtils.isNotBlank(password) || !password.equals(team.getPassword())) {
                 throw new BusinessException(ErrorCode.PARAMS_NULL_ERROR, "密码错误");
             }
         }
@@ -287,34 +282,51 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
 //        if (team.getUserId().equals(userId)) {
 //            throw new BusinessException(ErrorCode.PARAMS_ERROR);
 //        }
-        QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
-        userTeamQueryWrapper.eq("userId", userId);
-        long hasJoinNum = userTeamService.count(userTeamQueryWrapper);
-        if (hasJoinNum > 5) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "最多创建和加入5个队伍");
+        RLock lock = redissonClient.getLock("paul:join_team");
+        try {
+            while (true){
+                if(lock.tryLock(0,-1, TimeUnit.MILLISECONDS)){
+                    System.out.println("getLock: " + Thread.currentThread().getId());
+                    QueryWrapper<UserTeam> userTeamQueryWrapper = new QueryWrapper<>();
+                    userTeamQueryWrapper.eq("userId", userId);
+                    long hasJoinNum = userTeamService.count(userTeamQueryWrapper);
+                    if (hasJoinNum > 5) {
+                        throw new BusinessException(ErrorCode.PARAMS_ERROR, "最多创建和加入5个队伍");
+                    }
+
+                    userTeamQueryWrapper = new QueryWrapper<>();
+                    userTeamQueryWrapper.eq("userId", userId);
+                    userTeamQueryWrapper.eq("teamId", teamId);
+                    long hasUserJoinTeam = userTeamService.count(userTeamQueryWrapper);
+                    if (hasUserJoinTeam > 0) {
+                        throw new BusinessException(ErrorCode.PARAMS_ERROR, "已加入该队伍");
+                    }
+
+
+                    long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
+                    userTeamQueryWrapper = new QueryWrapper<>();
+                    userTeamQueryWrapper.eq("teamId", teamId);
+                    if (teamHasJoinNum > team.getMaxNum()) {
+                        throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍已满");
+                    }
+
+                    UserTeam userTeam = new UserTeam();
+                    userTeam.setUserId(userId);
+                    userTeam.setTeamId(teamId);
+                    userTeam.setJoinTime(new Date());
+                    return userTeamService.save(userTeam);
+                }
+            }
+        }catch (InterruptedException e){
+            log.error("doCacheRecommendUser error", e);
+            return false;
+        }finally {
+            // 只能释放自己的锁
+            if (lock.isHeldByCurrentThread()) {
+                System.out.println("unLock: " + Thread.currentThread().getId());
+                lock.unlock();
+            }
         }
-
-        userTeamQueryWrapper = new QueryWrapper<>();
-        userTeamQueryWrapper.eq("userId", userId);
-        userTeamQueryWrapper.eq("teamId", teamId);
-        long hasUserJoinTeam = userTeamService.count(userTeamQueryWrapper);
-        if (hasUserJoinTeam > 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "已加入该队伍");
-        }
-
-
-        long teamHasJoinNum = this.countTeamUserByTeamId(teamId);
-        userTeamQueryWrapper = new QueryWrapper<>();
-        userTeamQueryWrapper.eq("teamId", teamId);
-        if (teamHasJoinNum > team.getMaxNum()) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "队伍已满");
-        }
-
-        UserTeam userTeam = new UserTeam();
-        userTeam.setUserId(userId);
-        userTeam.setTeamId(teamId);
-        userTeam.setJoinTime(new Date());
-        return userTeamService.save(userTeam);
     }
 
     @Override
