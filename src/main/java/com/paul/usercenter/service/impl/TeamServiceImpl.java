@@ -103,33 +103,35 @@ public class TeamServiceImpl extends ServiceImpl<TeamMapper, Team>
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "超时时间>当前时间");
         }
 
-        //每人最多创建5个队伍 但是如果连点可以创建多个，需要修
-        QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("userId", userId);
-        long hasTeamNum = this.count(queryWrapper);
-        if (hasTeamNum >= 5) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "最多创建5个队伍！");
-        }
+        synchronized (this) {
+            //每人最多创建5个队伍 但是如果连点可以创建多个，需要修
+            QueryWrapper<Team> queryWrapper = new QueryWrapper<>();
+            queryWrapper.eq("userId", userId);
+            long hasTeamNum = this.count(queryWrapper);
+            if (hasTeamNum >= 5) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "最多创建5个队伍！");
+            }
 
-        team.setId(null);
-        team.setUserId(userId);
-        boolean result = this.save(team);
-        Long teamId = team.getId();
-        if (!result || teamId == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
-        }
+            team.setId(null);
+            team.setUserId(userId);
+            boolean result = this.save(team);
+            Long teamId = team.getId();
+            if (!result || teamId == null) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
+            }
 
-        //插入用户
-        UserTeam userTeam = new UserTeam();
-        userTeam.setUserId(userId);
-        userTeam.setTeamId(teamId);
-        userTeam.setJoinTime(new Date());
-        result = userTeamService.save(userTeam);
-        if (!result) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
-        }
+            //插入用户
+            UserTeam userTeam = new UserTeam();
+            userTeam.setUserId(userId);
+            userTeam.setTeamId(teamId);
+            userTeam.setJoinTime(new Date());
+            result = userTeamService.save(userTeam);
+            if (!result) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "创建队伍失败");
+            }
 
-        return teamId;
+            return teamId;
+        }
     }
 
     @Override
