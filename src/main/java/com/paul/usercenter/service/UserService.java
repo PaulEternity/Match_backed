@@ -1,7 +1,9 @@
 package com.paul.usercenter.service;
 
+import com.paul.usercenter.common.BaseResponse;
 import com.paul.usercenter.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.paul.usercenter.model.vo.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -81,4 +83,5 @@ public interface UserService extends IService<User> {
      */
     User getLoginUser(HttpServletRequest request);
 
+    List<User> matchUsers(long num, User loginUser);
 }

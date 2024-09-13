@@ -57,6 +57,11 @@
         <version>2.8.9</version>
     </dependency>
     <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-math3</artifactId>
+        <version>3.6.1</version> <!-- 请使用最新的兼容版本 -->
+    </dependency>
+    <dependency>
         <groupId>com.github.xiaoymin</groupId>
         <artifactId>knife4j-openapi2-spring-boot-starter</artifactId>
         <version>4.4.0</version>
